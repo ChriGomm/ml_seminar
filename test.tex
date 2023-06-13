@@ -158,8 +158,34 @@ $$n\,Var[W]=1$$
 ist. Um dies zu erreichen, kann $W^i$ aus einer gleicförmigen Verteilung aus dem Intervall 
 $$\left[-\sqrt{\frac{6}{n_i+n_{i+1}}},\sqrt{\frac{6}{n_i+n_{i+1}}}\right]$$
 gezogen werden.
+\begin{figure}[H]\centering\includegraphics[scale=0.6]{Training_course_for_all.png}\caption{Trainingsverlauf für verschiedene Aktivierungsfunktionen. Das label N steht hier für eine Initialisierung nach obiger Methode.}\end{figure}
+In Obigem Beispiel sieht man, dass diese Initialisierung, die als normalized Initialization bezeichnet wird, sehr gut abschneidet und nur von unsupervised pre-Learning übertroffen wird. Die Staffelung der Leistung für die verschiedenen Aktivierungsfunktionen bei gewöhnlicher Initialisierung wird von Glorot \& Bengio (cite) so erklärt, dass man beobachtet, dass beim Start des Lernens hauptsächlich von den Biases im Outputlayer gelernt wird, und von den Input daten nur ein Random Output ohne Information ankommt. Daher ist das System bestrebt, den Effekt des Input zu verringern und daher die Gewichte klein (gegen 0) zu machen. Da die Sigmoid Funkion für zero-Output komplett gesätigt ist, beginnt das System nur sehr langsam zu lernen. Da tanh und softsign ($=x/(|x|+1)$) symetrisch um 0 als Output verteilt ist, und diese Funktionen sich dort im linearen Regime befinden, findet bei diesen Aktivierungen ein schnelleres Wachstum statt. Der Unterschied zwischen softsign und tanh besteht darin, dass tanh exponentiell gegen seine Asymptote geht und softsign quadratisch. Softsign sättigt dadurch weniger schnell und besitzt deshalb ein besseres Lernverhalten.
 
+\subsection*{Unsupervised pre-Training}
+Die besten Ergebnisse für das oben betrachtete Problem lieferte, wie angesprochen, eine Initialisierung mit unsupervised pre-training. Unsupervised learning ist eine Art von Mashine Learning, in der anders als beim supervised Learning nicht ein Paar von Input und erwünschten korrekten Output Combinationen übergeben wird, sondern nur Input Daten übergeben werden. Ziel ist es hier eine gewisse Struktur in den Input Daten zu erkennen, wie beispielsweise Clusster oder Features. Allgenein kann das Ziel von unsupervised learning möglicherweise so formuliert werden, dass versucht wird eine von gewissen Prarmetern $\bf{\omega}$ abhähngige Wahrscheinlichkeitsverteilung $P(\bf{x},\bf{\omega})$ der Input Daten zu finden, die die Wahrscheinlichkeit für das Auftreten der spezifischen Input Daten maximiert.\newline
+Da die Ziele und Methoden im unsupervised learning Bereich jedoch so verschieden sind, ist es schwer eine allgemeine Herangehensweise zu formulieren. Ich stelle deshalb nur das spezifische Verfahren dar, das in obigem Fall verwendet wurde und das sich dem Anschein nach besonders gut eignet, um tiefe neuronale Netze zu initialisieren. Es handelt sich hierbei um einen Denoising Autoencoder. Ein gewöhnlicher Autoencoder hat zwei hidden Layers. Im ersten Layer wird der Input comprimiert. Das erste Layer hat in diesem Fall eine niedrigere Dimension als das Input Layer, es handelt sich hierbei um ein gewöhnliches Neuronales Layer, dessen Output
+$$f(x)\vcentcolon=\sigma(W\,x+b)$$
+ist. Im zweiten und letzten Layer, welches wiederum ein gewöhnliches neuronales Layer ist, wird versucht die verlorene Information zu rekonstruieren. Ich schreibe das Output des zweiten Layers als
+$$g(x)\vcentcolon=\sigma(W'\,x+b').$$
+Das System wird trainiert, in dem der Abstand von Output und Input minimiert wird.
+\begin{align*}\frac{1}{n}\sum_i||x_i-g(f(x^i))||^2\\
+    =\bf{E}_{p(x)}[||x-g(f(x))||^2]
+\end{align*}
+wobei $x^i$ ein Datenpunkt aus den Trainingsdaten und p die intinsische Wahrscheinlichkeitsverteilung der Datenpunkte ist. 
+$$\bf{E}_{p(x)}[F(x)]$$
+beschreibe hier den Erwarungswert von F bezüglich der Wahrscheinlichkeitsverteilung p. In dem Paper, auf das ich mich beziehe, wurde eine andere Kostenfunktion verwendet, die in der Praxis oft verwendet wird. Zunächst führe ich dafür die Bernoulli Verteilung ein
 
+\begin{gather*}\mathfrak{B}_\alpha(x)=\Bigl\{\begin{array}{l}\alpha\quad\text{wenn}\;x=1\\
+    1-\alpha\quad\text{wenn}\;x=0\end{array}\end{gather*}
+Im folgenden ist die die Variable x in dieser Definition verdeckt und von keiner Bedeutung. Die verwendete Kostenfunktion ist
+\begin{gather*}
+    \bf{E}_{p(x)}\left[L_H(x,g(f(x)))\right]\\
+    \vcentcolon=\bf{E}_{\mathfrak{B}_x}\left[-\log(\mathfrak{B}_{g(f(x))})\right]\\
+    =-\frac{1}{n}\sum_i\sum_{k=0}^d\left[x_k^i\log(g(f(x_k^i)))+(1-x_k^i)\log(g(f(x_k^i)))\right]
+\end{gather*}
+d ist die Dimension der Input Daten. Für den vollen von Vincent et al (2008) verwendeten denoising autoencoder, wurde noch ein zufälliges Rauschen eingebaut. Dafür wurde je nach Stärke des Rauschens eine Bestimmte Zahl an Komponenten eines Inputvektors zufällig ausgewählt und auf 0 gesetzt. Diese Operation bezeichne ich mit $\tilde{x}(x)$ oder oft auch einfach mit $\tilde{x}$. Minimiert wurde 
+$$\bf{E}_{p(x)}\left[L_H(x,g(f(\tilde{x})))\right]$$
+Für den Fall des gewöhnlichen Autoencoders ist erforderlich, dass die Dimension des ersten Hidden Layers kleiner als die Dimension der Input Punkte ist, damit das Netz nicht einfach die Identität lernen kann. Für den Fall der des denoising Autoencoders ist dies aufgrund der stochastischen Informationsreduktion ausgeschlossen. Daher kann die Größer der Layer beliebig gewählt werden. Dies ist vorteilhaft für die Anwendung als Initialisator neuronaler Netze. 
 
 
 
